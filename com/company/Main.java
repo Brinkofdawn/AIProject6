@@ -8,7 +8,7 @@ public class Main {
 
     public static void main(String[] args) {
 	// write your code here
-        if (args.length != 1) {
+        if (args.length != 2) {
             System.out.println("Incorrect Input");
             System.exit(1);
         }
@@ -42,9 +42,7 @@ public class Main {
             e.printStackTrace();
         }
 
-        for(int i =0; i<BayesNet.size();i++ ){
-              BayesNet.get(i).printData();
-        }
+
 
     }
 
