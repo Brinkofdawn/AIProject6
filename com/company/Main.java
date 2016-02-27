@@ -8,13 +8,16 @@ public class Main {
 
     public static void main(String[] args) {
 	// write your code here
-        if (args.length != 2) {
+
+        if (args.length != 3) {
             System.out.println("Incorrect Input");
             System.exit(1);
         }
         BufferedReader br = null;
 
         String inFile = args[0];
+        String status = args[1];
+        int samples = Integer.parseInt(args[2]);
         ArrayList<Node> BayesNet  = new ArrayList<Node>();
         String thisLine;
 
@@ -42,9 +45,30 @@ public class Main {
             e.printStackTrace();
         }
 
+        try{
+            // open input stream test.txt for reading purpose.
+            br = new BufferedReader(new FileReader(status));
+            while ((thisLine = br.readLine()) != null) {
+                String[] tempArray = thisLine.split(",");
+                for(int i = 0; i < tempArray.length; i++) {
+                    BayesNet.get(i).setStatus(tempArray[i]);
+                    BayesNet.get(i).setTempStatus(tempArray[i]);
+                    // BayesNet.get(i).printData();
+                }
+            }
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
 
-
+        // run rejection sampling
+        for (int i = 0; i< BayesNet.size(); i++ ){
+            if (BayesNet.get(i).getStatus().equals("q")|| BayesNet.get(i).getStatus().equals("?")){
+                BayesNet.get(i).rejection(samples, BayesNet);
+                break;
+            }
+        }
     }
 
-    }
+}
 
