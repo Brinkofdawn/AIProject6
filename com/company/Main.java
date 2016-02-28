@@ -68,6 +68,14 @@ public class Main {
                 break;
             }
         }
+
+        // run weighted sampling
+        for (int i = 0; i< BayesNet.size(); i++ ){
+            if (BayesNet.get(i).getStatus().equals("q")|| BayesNet.get(i).getStatus().equals("?")){
+                BayesNet.get(i).weighted(samples, BayesNet);
+                break;
+            }
+        }
     }
 
 }
