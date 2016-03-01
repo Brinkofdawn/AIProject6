@@ -21,6 +21,7 @@ public class Main {
         ArrayList<Node> BayesNet  = new ArrayList<Node>();
         String thisLine;
 
+        // reading in network file
         try{
             // open input stream test.txt for reading purpose.
            br = new BufferedReader(new FileReader(inFile));
@@ -45,6 +46,7 @@ public class Main {
             e.printStackTrace();
         }
 
+        // reading in query file
         try{
             // open input stream test.txt for reading purpose.
             br = new BufferedReader(new FileReader(status));

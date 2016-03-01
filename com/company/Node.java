@@ -14,6 +14,9 @@ public class Node {
     private ArrayList<String> parents;
     private ArrayList<Double> prob;
     private boolean needsTruth = false;
+    private String status;
+    private String tempStatus; // used in all the functions, reset using the original status
+    static double weight = 1; // weight to be used in likelihood weighting
 
     public String getName() {
         return name;
@@ -53,18 +56,14 @@ public class Node {
         this.tempStatus = status;
     }
 
-    private String status;
 
-    private String tempStatus;
-
-    static double weight = 1;
 
 
     public Node(String name, ArrayList<String> parents, ArrayList<Double> prob){
         this.name = name;
         this.parents = parents;
         this.prob = prob;
-
+        // only needs a truth table if it has parents
         if (parents.size() > 0){
             this.needsTruth = true;
             this.truthTable= new String[prob.size()][parents.size()];
@@ -76,7 +75,7 @@ public class Node {
     }
 
 
-
+// Set up the truth table for the node
     public void initializeTruth(){
         int x = prob.size();
         int y = parents.size();
@@ -115,8 +114,10 @@ public class Node {
 
     }
 
+    // rejection sampling wrapper, runs the function specified number of times
     public void rejection(int sample, ArrayList<Node> BayesNet){
 
+        // counting the true and false samples
         double numTrue = 0;
         double numFalse = 0;
         for(int i= 0; i<sample;i++) {
@@ -129,6 +130,7 @@ public class Node {
                 //System.out.println("FALSE");
 
             }
+            // resets the status of each node back to the original status so that the network can be run again
             resetStatus(BayesNet);
         }
         System.out.println("Rejection Sampling");
@@ -139,7 +141,10 @@ public class Node {
 
     }
 
+    // rejection likelihood weighting wrapper, runs the function specified number of times
+
     public void weighted(int sample, ArrayList<Node> BayesNet){
+        // counting the true and false samples and the the true and false weights
         int numTrue = 0;
         double trueWeight = 0;
         int numFalse = 0;
@@ -157,6 +162,7 @@ public class Node {
                 //System.out.println("FALSE");
 
             }
+            //reseting the status and the weight back to 1 for the BayesNet
             resetStatus(BayesNet);
             weight = 1;
         }
@@ -171,9 +177,10 @@ public class Node {
         int numParents = parents.size();
         Random rndNumbers = new Random();
 
-
+        // if the Node is an evidence variable
         if(status.equals("t")||status.equals("f")){
-            // keep the truth value
+
+            // keep the truth value and can easily calculate probability if no parents
             if (numParents == 0) {
                 if (tempStatus.equals("t")) {
                     weight = weight * prob.get(0);
@@ -183,7 +190,7 @@ public class Node {
                 }
 
             }
-
+            // generating list of parent Nodes   if has parents
             else{
                 ArrayList<Node> par = new ArrayList<Node>();
                 for (int i = 0; i < parents.size(); i++){
@@ -194,11 +201,12 @@ public class Node {
                         }
                     }
                 }
-
+            // get the truth values of the parents and run weighted sampling on them
                 for(int i = 0; i< par.size(); i++){
                     par.get(i).weightedSampling(BayesNet);
                 }
                 int temp1 = 0;
+                // finding the corresponding truth table value
                 for (int i = 0; i< truthTable.length; i++){
                     for(int j = 0; j < par.size(); j++){
                         if (truthTable[i][j].equals(par.get(j).getTempStatus())){
@@ -210,7 +218,7 @@ public class Node {
 
                         if(j == par.size()-1){
                             temp1 = 1;
-
+                            // set the truth value and change the weight since its an evidence variable
                             if (tempStatus.equals("f")) {
                                 weight = weight*(1-prob.get(i));
                             }
@@ -230,8 +238,10 @@ public class Node {
             }
         }
 
+        // if not an evidence variable
         else if(status.equals("-")) {
             // if it is a top level node
+            // keep the truth value and can easily calculate probability if no parents
             if (numParents == 0) {
                 double assign = rndNumbers.nextFloat();
                 if (assign > prob.get(0)) {
@@ -253,12 +263,13 @@ public class Node {
                         }
                     }
                 }
-
+                // get the truth values of the parents and run weighted sampling on them
                 for(int i = 0; i< par.size(); i++){
 
                     par.get(i).weightedSampling(BayesNet);
                 }
                 int temp1 = 0;
+                // finding the corresponding truth table value
                 for (int i = 0; i< truthTable.length; i++){
                     for(int j = 0; j < par.size(); j++){
                         if (truthTable[i][j].equals(par.get(j).getTempStatus())){
@@ -273,6 +284,7 @@ public class Node {
                             double tempProb = getProb().get(i);
                             double assign = rndNumbers.nextFloat();
                             //System.out.println(assign);
+                            // set the truth value
                             if (assign > tempProb) {
                                 tempStatus = "f";
                             }
@@ -292,22 +304,25 @@ public class Node {
             }
         }
 
-
+        // if this is a query node
         else if(status.equals("?")||status.equals("q")) {
             // if it is a top level node
+            // keep the truth value and can easily calculate probability if no parents
             if (numParents == 0) {
                 double assign = rndNumbers.nextFloat();
-                // System.out.println(assign);
+                // return the weight depending on the corresponding truth value
                 if (assign > prob.get(0)) {
                     tempStatus = "f";
+                    return - weight;
                 }
                 else {
                     tempStatus = "t";
+                    return weight;
                 }
             }
 
             else{
-                // construct parent object list
+                // construct parent object list if has aprents
                 ArrayList<Node> par = new ArrayList<Node>();
                 for (int i = 0; i < parents.size(); i++){
                     for (int j =0; j< BayesNet.size(); j++){
@@ -317,11 +332,12 @@ public class Node {
                         }
                     }
                 }
-
+                // run weightedSampling on the parent nodes
                 for(int i = 0; i< par.size(); i++){
                     par.get(i).weightedSampling(BayesNet);
                 }
                 int temp1 = 0;
+                // find the correct truth table section
                 for (int i = 0; i< truthTable.length; i++){
                     for(int j = 0; j < par.size(); j++){
                         if (truthTable[i][j].equals(par.get(j).getTempStatus())){
@@ -351,6 +367,7 @@ public class Node {
                             }
                             */
 
+                            // return the weight depending on the corresponding truth value
                             if (assign > tempProb) {
                                 tempStatus = "f";
                                 return - weight;
@@ -378,8 +395,11 @@ public class Node {
     public int rejectionSampling(ArrayList<Node> BayesNet){
         int numParents = parents.size();
         Random rndNumbers = new Random();
+
+        // if not a query node
         if(tempStatus.equals("-")||tempStatus.equals("t")||tempStatus.equals("f")) {
-            // if it is a top level node
+            // if it is a top level node(no parents)
+            // find the truth value
             if (numParents == 0) {
                 double assign = rndNumbers.nextFloat();
                // System.out.println(assign);
@@ -402,12 +422,13 @@ public class Node {
                         }
                     }
                 }
-
+                // sample the parents
                 for(int i = 0; i< par.size(); i++){
 
                         par.get(i).rejectionSampling(BayesNet);
                 }
                 int temp1 = 0;
+                // find the correct truth table section
                 for (int i = 0; i< truthTable.length; i++){
                     for(int j = 0; j < par.size(); j++){
                         if (truthTable[i][j].equals(par.get(j).getTempStatus())){
@@ -422,6 +443,7 @@ public class Node {
                             double tempProb = getProb().get(i);
                             double assign = rndNumbers.nextFloat();
                             //System.out.println(assign);
+                            // set the truth value
                             if (assign > tempProb) {
                                 tempStatus = "f";
                             }
@@ -441,21 +463,25 @@ public class Node {
             }
         }
 
+       // if a query node
        else if(tempStatus.equals("?")||tempStatus.equals("q")) {
-            // if it is a top level node
+            // if no parents
+            // return the truth value for the wrapper
             if (numParents == 0) {
                 double assign = rndNumbers.nextFloat();
                // System.out.println(assign);
                 if (assign > prob.get(0)) {
                     tempStatus = "f";
+                    return 0;
                 }
                 else {
                     tempStatus = "t";
+                    return -1;
                 }
             }
 
             else{
-                // construct parent object list
+                // construct parent object list if no parents
                 ArrayList<Node> par = new ArrayList<Node>();
                 for (int i = 0; i < parents.size(); i++){
                     for (int j =0; j< BayesNet.size(); j++){
@@ -470,6 +496,7 @@ public class Node {
                         par.get(i).rejectionSampling(BayesNet);
                 }
                 int temp1 = 0;
+                // find correct truth value location
                 for (int i = 0; i< truthTable.length; i++){
                     for(int j = 0; j < par.size(); j++){
                         if (truthTable[i][j].equals(par.get(j).getTempStatus())){
@@ -485,6 +512,7 @@ public class Node {
                             double assign = rndNumbers.nextFloat();
                             //System.out.println(assign);
 
+                            // check if the system is valid
                             for(int k =0; k < BayesNet.size();k++){
                                 if(BayesNet.get(k).getStatus().equals("f")|| BayesNet.get(k).getStatus().equals("t")){
                                     if(BayesNet.get(k).getStatus().equals(BayesNet.get(k).getTempStatus())){
@@ -495,6 +523,7 @@ public class Node {
                                     }
                                 }
                             }
+                            // if the system is valid according to evidence return the correct truth value
                             if (assign > tempProb) {
                                 tempStatus = "f";
                                 return 0;
@@ -519,12 +548,14 @@ public class Node {
 
     }
 
+    // function to reset status
     public void resetStatus(ArrayList<Node> BayesNet) {
         for(int i =0; i<BayesNet.size();i++) {
             BayesNet.get(i).setTempStatus(BayesNet.get(i).getStatus());
         }
     }
 
+    // debuging function to print out node data
     public void printData(){
         System.out.println(name);
         System.out.println(status);
